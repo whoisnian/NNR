@@ -26,11 +26,14 @@ nnr_device *nnr_init()
 
     LONG rv;
     DWORD dwReaders, dwActiveProtocol;
-
     dwReaders = SCARD_AUTOALLOCATE;
     rv = SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &pnd->hContext);
-    rv = SCardListReaders(pnd->hContext, NULL, pnd->readerName, &dwReaders);
+    rv = SCardListReaders(pnd->hContext, NULL, (LPTSTR)&pnd->readerName, &dwReaders);
 
+    pnd->rgReaderStates[0].szReader = pnd->readerName;
+    pnd->rgReaderStates[0].dwCurrentState = SCARD_STATE_UNAWARE;
+    pnd->rgReaderStates[1].szReader = "\\\\?PnP?\\Notification";
+    pnd->rgReaderStates[1].dwCurrentState = SCARD_STATE_UNAWARE;
     return pnd;
 }
 
@@ -39,42 +42,67 @@ void nnr_close(nnr_device *pnd)
     LONG rv;
     if(pnd != NULL)
     {
-        rv = SCardCancel(pnd->hContext);
         rv = SCardFreeMemory(pnd->hContext, pnd->readerName);
         rv = SCardReleaseContext(pnd->hContext);
         free(pnd);
+        pnd = NULL;
     }
 }
 
 int nnr_wait_for_new_card(nnr_device *pnd)
 {
-    SCARD_READERSTATE rgReaderStates[2];
-    rgReaderStates[0].szReader = pnd->readerName;
-    //rgReaderStates[0].szReader = "ACS ACR122U PICC Interface 00 00";
-    rgReaderStates[0].dwCurrentState = SCARD_STATE_UNAWARE;
-    rgReaderStates[1].szReader = "\\\\?PnP?\\Notification";
-    rgReaderStates[1].dwCurrentState = SCARD_STATE_UNAWARE;
-
     LONG rv;
     while(1)
     {
-        rv = SCardGetStatusChange(pnd->hContext, INFINITE, rgReaderStates, 2);
-        if(rgReaderStates[0].dwEventState&SCARD_STATE_PRESENT)
+        rv = SCardGetStatusChange(pnd->hContext, INFINITE, pnd->rgReaderStates, 2);
+        if(rv == SCARD_E_CANCELLED) break;
+
+        /*
+        printf("==========  wait result  ==========\n");
+        printf("0x%04X  0x%04X\n", pnd->rgReaderStates[0].dwCurrentState, pnd->rgReaderStates[0].dwEventState);
+        printf("0x%04X  0x%04X\n", pnd->rgReaderStates[1].dwCurrentState, pnd->rgReaderStates[1].dwEventState);
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_UNAWARE)
+            printf("SCARD_STATE_UNAWARE\n");
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_IGNORE)
+            printf("SCARD_STATE_IGNORE\n");
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_CHANGED)
+            printf("SCARD_STATE_CHANGED\n");
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_UNKNOWN)
+            printf("SCARD_STATE_UNKNOWN\n");
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_UNAVAILABLE)
+            printf("SCARD_STATE_UNAVAILABLE\n");
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_EMPTY)
+            printf("SCARD_STATE_EMPTY\n");
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_PRESENT)
+            printf("SCARD_STATE_PRESENT\n");
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_EXCLUSIVE)
+            printf("SCARD_STATE_EXCLUSIVE\n");
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_INUSE)
+            printf("SCARD_STATE_INUSE\n");
+        if(pnd->rgReaderStates[0].dwEventState & SCARD_STATE_MUTE)
+            printf("SCARD_STATE_MUTE\n");
+        */
+
+        pnd->rgReaderStates[0].dwCurrentState = pnd->rgReaderStates[0].dwEventState;
+        if(pnd->rgReaderStates[0].dwEventState&SCARD_STATE_PRESENT)
         {
-            return 0;
-        }
-        else
-        {
-            rgReaderStates[0].dwCurrentState = rgReaderStates[0].dwEventState;
+            break;
         }
     }
+    return 0;
+}
+
+int nnr_cancel_wait(nnr_device *pnd)
+{
+    LONG rv;
+    rv = SCardCancel(pnd->hContext);
+    return rv;
 }
 
 int nnr_card_connect(nnr_device *pnd)
 {
     LONG rv;
     DWORD dwActiveProtocol;
-
     rv = SCardConnect(pnd->hContext, pnd->readerName, SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0|SCARD_PROTOCOL_T1, &pnd->hCard, &dwActiveProtocol);
     switch(dwActiveProtocol)
     {
@@ -91,7 +119,6 @@ int nnr_card_connect(nnr_device *pnd)
 int nnr_card_disconnect(nnr_device *pnd)
 {
     LONG rv;
-
     rv = SCardDisconnect(pnd->hCard, SCARD_LEAVE_CARD);
     return 0;
 }

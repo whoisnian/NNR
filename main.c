@@ -32,8 +32,8 @@ void stop_read(int sig)
     print_log(log_info, "Stop read... (sig: %d)\n", sig);
     if(pnd != NULL)
     {
-        nnr_close(pnd);
         quit_flag = true;
+        nnr_cancel_wait(pnd);
     }
 }
 
@@ -48,16 +48,18 @@ int main(void)
     pnd = nnr_init();
     if(pnd == NULL)
     {
-        print_log(log_error, "Failed to init reader '%s'.\n", pnd->readerName);
+        print_log(log_error, "Failed to init reader.\n");
         return -1;
     }
-    print_log(log_info, "Init reader '%s' successful.\n", pnd->readerName);
+    print_log(log_info, "Init reader '%s'.\n", pnd->readerName);
 
     int res;
     while(!quit_flag)
     {
         // 等待校园卡插入（阻塞）
         res = nnr_wait_for_new_card(pnd);
+        if(quit_flag) break;
+        printf("\n\n========================================\n");
         print_log(log_info, "Get new card: \n");
 
         res = nnr_card_connect(pnd);
@@ -66,5 +68,6 @@ int main(void)
         res = nnr_card_disconnect(pnd);
         print_log(log_info, "Disconnect\n");
     }
+    nnr_close(pnd);
     return 0;
 }

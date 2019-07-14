@@ -24,6 +24,7 @@ typedef struct nnr_device
     SCARDCONTEXT hContext;
     char *readerName;
     SCARD_IO_REQUEST pioSendPci;
+    SCARD_READERSTATE rgReaderStates[2];
 }nnr_device;
 
 // 初始化读卡器
@@ -34,6 +35,9 @@ void nnr_close(nnr_device *pnd);
 
 // 等待校园卡插入（阻塞）
 int nnr_wait_for_new_card(nnr_device *pnd);
+
+// 取消正被阻塞的等待
+int nnr_cancel_wait(nnr_device *pnd);
 
 // 连接校园卡
 int nnr_card_connect(nnr_device *pnd);
