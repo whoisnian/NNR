@@ -34,21 +34,21 @@ typedef struct nnr_device
 nnr_device *nnr_init(const char *readerName);
 
 // 关闭读卡器连接，释放所有资源
-int nnr_close(nnr_device *pnd);
+LONG nnr_close(nnr_device *pnd);
 
 // 等待校园卡插入（阻塞）
-int nnr_wait_for_new_card(nnr_device *pnd);
+LONG nnr_wait_for_new_card(nnr_device *pnd);
 
 // 取消正被阻塞的等待
-int nnr_cancel_wait(nnr_device *pnd);
+LONG nnr_cancel_wait(nnr_device *pnd);
 
 // 连接校园卡
-int nnr_card_connect(nnr_device *pnd);
+LONG nnr_card_connect(nnr_device *pnd);
 
 // 断开与校园卡的连接
-int nnr_card_disconnect(nnr_device *pnd);
+LONG nnr_card_disconnect(nnr_device *pnd);
 
 // 向校园卡发送指令
-int nnr_transceive_bytes(nnr_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, size_t *szRx);
+LONG nnr_transceive_bytes(nnr_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, size_t *szRx);
 
 #endif // NNR_H

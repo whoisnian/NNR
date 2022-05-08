@@ -51,7 +51,7 @@ int main(void)
     }
     print_log(log_info, "Init reader '%s'.\n", pnd->szReader);
 
-    int res;
+    LONG res;
     while (!quit_flag)
     {
         // 等待校园卡插入（阻塞）

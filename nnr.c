@@ -48,9 +48,9 @@ nnr_device *nnr_init(const char *readerName)
     return pnd;
 }
 
-int nnr_close(nnr_device *pnd)
+LONG nnr_close(nnr_device *pnd)
 {
-    LONG rv;
+    LONG rv = 0;
     rv = SCardFreeMemory(pnd->hContext, pnd->mszReaders);
     if (rv != SCARD_S_SUCCESS)
         return rv;
@@ -58,10 +58,10 @@ int nnr_close(nnr_device *pnd)
     if (rv != SCARD_S_SUCCESS)
         return rv;
     free(pnd);
-    return 0;
+    return rv;
 }
 
-int nnr_wait_for_new_card(nnr_device *pnd)
+LONG nnr_wait_for_new_card(nnr_device *pnd)
 {
     LONG rv = 0;
     while (1)
@@ -77,12 +77,12 @@ int nnr_wait_for_new_card(nnr_device *pnd)
     return rv;
 }
 
-int nnr_cancel_wait(nnr_device *pnd)
+LONG nnr_cancel_wait(nnr_device *pnd)
 {
     return SCardCancel(pnd->hContext);
 }
 
-int nnr_card_connect(nnr_device *pnd)
+LONG nnr_card_connect(nnr_device *pnd)
 {
     LONG rv;
     DWORD dwActiveProtocol;
@@ -99,12 +99,12 @@ int nnr_card_connect(nnr_device *pnd)
     return rv;
 }
 
-int nnr_card_disconnect(nnr_device *pnd)
+LONG nnr_card_disconnect(nnr_device *pnd)
 {
     return SCardDisconnect(pnd->hCard, SCARD_LEAVE_CARD);
 }
 
-int nnr_transceive_bytes(nnr_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, size_t *szRx)
+LONG nnr_transceive_bytes(nnr_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, size_t *szRx)
 {
     return SCardTransmit(pnd->hCard, &pnd->pioSendPci, pbtTx, szTx, NULL, pbtRx, szRx);
 }
