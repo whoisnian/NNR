@@ -9,11 +9,13 @@
 #include <time.h>
 #include <stdarg.h>
 
-typedef enum LogType {
+typedef enum LogType
+{
     log_info,
     log_warn,
     log_error,
-}LogType;
+    log_debug,
+} LogType;
 
 // 日志输出
 void print_log(LogType type, const char *format, ...);
@@ -22,16 +24,17 @@ typedef struct nnr_device
 {
     SCARDHANDLE hCard;
     SCARDCONTEXT hContext;
-    char *readerName;
+    LPSTR mszReaders;
+    LPSTR szReader;
     SCARD_IO_REQUEST pioSendPci;
-    SCARD_READERSTATE rgReaderStates[2];
-}nnr_device;
+    SCARD_READERSTATE rgReaderState;
+} nnr_device;
 
 // 初始化读卡器
-nnr_device *nnr_init();
+nnr_device *nnr_init(const char *readerName);
 
-// 关闭读卡器，释放资源
-void nnr_close(nnr_device *pnd);
+// 关闭读卡器连接，释放所有资源
+int nnr_close(nnr_device *pnd);
 
 // 等待校园卡插入（阻塞）
 int nnr_wait_for_new_card(nnr_device *pnd);
@@ -45,10 +48,7 @@ int nnr_card_connect(nnr_device *pnd);
 // 断开与校园卡的连接
 int nnr_card_disconnect(nnr_device *pnd);
 
-// 向校园卡发送指令（程序发送时自动加上校验部分）
+// 向校园卡发送指令
 int nnr_transceive_bytes(nnr_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, size_t *szRx);
-
-// 向校园卡发送原始指令（程序按指令原样发送，不做任何处理）
-int nnr_transceive_raw_bytes(nnr_device *pnd, const uint8_t *pbtTx, const size_t szTx, uint8_t *pbtRx, size_t *szRx);
 
 #endif // NNR_H
