@@ -54,7 +54,7 @@ int main(void)
     LONG res;
     while (!quit_flag)
     {
-        // 等待校园卡插入（阻塞）
+        // 等待交通卡插入（阻塞）
         res = nnr_wait_for_new_card(pnd);
         if (quit_flag)
             break;
@@ -74,45 +74,52 @@ int main(void)
         print_log(log_info, "Card UID: ");
         print_hex(rx, rx_size, false);
 
-        // FMCOS command: SELECT NC.eCard.DDF01
+        // FMCOS command: SELECT 2PAY.SYS.DDF01
         tx_size = 19;
         rx_size = sizeof(rx);
-        memcpy(tx, "\x00\xA4\x04\x00\x0E\x4E\x43\x2E\x65\x43\x61\x72\x64\x2E\x44\x44\x46\x30\x31", tx_size);
+        memcpy(tx, "\x00\xA4\x04\x00\x0E\x32\x50\x41\x59\x2E\x53\x59\x53\x2E\x44\x44\x46\x30\x31", tx_size);
         res = nnr_transceive_bytes(pnd, tx, tx_size, rx, &rx_size);
         print_log(log_info, "EMV: "); // https://emvlab.org/tlvutils/
         print_hex(rx, rx_size, false);
 
-        // FMCOS command: READ BINARY sfi(0x16) offset(0x84) length(0x14)
+        // FMCOS command: SELECT A000000632010105
+        tx_size = 13;
+        rx_size = sizeof(rx);
+        memcpy(tx, "\x00\xA4\x04\x00\x08\xA0\x00\x00\x06\x32\x01\x01\x05", tx_size);
+        res = nnr_transceive_bytes(pnd, tx, tx_size, rx, &rx_size);
+        print_log(log_info, "Card File: ");
+        print_hex(rx, rx_size, false);
+
+        // FMCOS command: READ BINARY sfi(0x15) offset(0x00) length(0x1E)
         tx_size = 5;
         rx_size = sizeof(rx);
-        memcpy(tx, "\x00\xB0\x96\x84\x14", tx_size);
+        memcpy(tx, "\x00\xB0\x95\x00\x1E", tx_size);
         res = nnr_transceive_bytes(pnd, tx, tx_size, rx, &rx_size);
-        rx[rx_size - 2] = '\0';
-        print_log(log_info, "学号: %s\n", rx);
+        print_log(log_info, "公共应用信息(0x15): ");
+        print_hex(rx, rx_size, false);
 
-        // FMCOS command: READ BINARY sfi(0x16) offset(0x16) length(0x12)
+        // FMCOS command: READ BINARY sfi(0x16) offset(0x00) length(0x37)
         tx_size = 5;
         rx_size = sizeof(rx);
-        memcpy(tx, "\x00\xB0\x96\x16\x12", tx_size);
+        memcpy(tx, "\x00\xB0\x96\x00\x37", tx_size);
         res = nnr_transceive_bytes(pnd, tx, tx_size, rx, &rx_size);
-        rx[rx_size - 2] = '\0';
-        print_log(log_info, "身份证: %s\n", rx);
+        print_log(log_info, "持卡人基本信息(0x16): ");
+        print_hex(rx, rx_size, false);
 
-        // FMCOS command: READ BINARY sfi(0x16) offset(0x02) length(0x14)
+        // FMCOS command: READ BINARY sfi(0x17) offset(0x00) length(0x3C)
         tx_size = 5;
         rx_size = sizeof(rx);
-        memcpy(tx, "\x00\xB0\x96\x02\x14", tx_size);
+        memcpy(tx, "\x00\xB0\x97\x00\x3C", tx_size);
         res = nnr_transceive_bytes(pnd, tx, tx_size, rx, &rx_size);
-        rx[rx_size - 2] = '\0';
-        print_log(log_info, "姓名: ");
-        print_hex(rx, rx_size - 2, true); // echo "\xb2\xe2\xca\xd4" | iconv -f gbk -t utf8
+        print_log(log_info, "管理信息(0x17): ");
+        print_hex(rx, rx_size, false);
 
-        // FMCOS command: SELECT DF(\xEC\x11)
-        tx_size = 7;
+        // FMCOS command: READ RECORD sfi(0x18) N(0x01-0x0A) length(0x17)
+        tx_size = 5;
         rx_size = sizeof(rx);
-        memcpy(tx, "\x00\xA4\x00\x00\x02\xEC\x11", tx_size);
+        memcpy(tx, "\x00\xB2\x01\xC4\x17", tx_size);
         res = nnr_transceive_bytes(pnd, tx, tx_size, rx, &rx_size);
-        print_log(log_info, "EMV: "); // https://emvlab.org/tlvutils/
+        print_log(log_info, "交易明细(0x18): ");
         print_hex(rx, rx_size, false);
 
         // FMCOS command: GET BALANCE
@@ -121,7 +128,7 @@ int main(void)
         memcpy(tx, "\x80\x5C\x00\x02\x04", tx_size);
         res = nnr_transceive_bytes(pnd, tx, tx_size, rx, &rx_size);
         print_log(log_info, "余额: ");
-        print_hex(rx, rx_size - 2, false);
+        print_hex(rx, rx_size, false);
 
         res = nnr_card_disconnect(pnd);
         print_log(log_info, "Disconnect\n");
