@@ -10,4 +10,5 @@ sudo systemctl start pcscd.service
 ## build
 ```sh
 gcc -I/usr/include/PCSC -lpcsclite nnr.c main.c -o NNR
+gcc -I/usr/include/PCSC -lpcsclite -lssl -lcrypto nnr.c new.c -o new
 ```
